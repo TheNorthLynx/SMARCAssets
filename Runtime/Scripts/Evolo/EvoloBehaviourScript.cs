@@ -70,9 +70,11 @@ namespace Evolo
         {
             if (!useROSCommands) // Unity control mode
             {
+                // Debug.Log("Using unity");
                 Unity_control_speed_yaw();
             }
-            if (privateSubscribeTopic!=subscribeTopic){ //alternate between topics to control evolo
+            if (privateSubscribeTopic!=subscribeTopic)
+            { //alternate between topics to control evolo
                 ros.Unsubscribe(privateSubscribeTopic);
                 ros.Subscribe<TwistMsg>(subscribeTopic, UpdateBoatControl);
                 privateSubscribeTopic=subscribeTopic;
@@ -85,14 +87,16 @@ namespace Evolo
         {
             if (useROSCommands) // Only update if ROS mode is enabled
             {
+                // Debug.Log("Applying lin: " + (float)msg.linear.x + " ang: " + (float)msg.angular.z);
+                // Debug.Log("Current speed goal: " + linearSpeedGoalKt);
                 float difference_speed= (float)msg.linear.x - linearSpeedGoalKt;
-                speed_roll_limits((float)msg.linear.x,difference_speed,(float)msg.angular.z);
+                speed_roll_limits((float)msg.linear.x, difference_speed, (float)msg.angular.z);
             }
         }
 
         void FixedUpdate()
         {
-            currentLinearSpeed = Compute_with_aceleration(currentLinearSpeed, linearSpeedGoalKt,Time.fixedDeltaTime,maxBoatAceleration/knotsToMetersPerSecond);
+            currentLinearSpeed = Compute_with_aceleration(currentLinearSpeed, linearSpeedGoalKt, Time.fixedDeltaTime, maxBoatAceleration/knotsToMetersPerSecond);
 
             speedMetersPerSecond = currentLinearSpeed * knotsToMetersPerSecond; //current speed
 
@@ -104,7 +108,7 @@ namespace Evolo
             //currentRollAngle = Compute_with_aceleration(rb.rotation.eulerAngles.z ,rollAngleGoal,Time.fixedDeltaTime,maxRollAceleration );
             float yawRate = ComputeYawRate(currentRollAngle, speedMetersPerSecond);
             
-            currentBoatOffsetZ =OffsetZ(speedMetersPerSecond);
+            currentBoatOffsetZ = OffsetZ(speedMetersPerSecond);
 
             // Get water level at the boat's position
             if (waterModel != null)
@@ -170,9 +174,9 @@ namespace Evolo
 
         float Compute_with_aceleration(float current, float goal, float delta_t, float max_accel)
         {
-            float goal_accel=goal - current;
+            float goal_accel = goal - current;
 
-            float delta= Mathf.Min(Mathf.Abs(goal_accel),max_accel*delta_t);
+            float delta= Mathf.Min(Mathf.Abs(goal_accel), max_accel*delta_t);
             if (goal_accel==0){
                 return current;
             }else{
@@ -216,7 +220,7 @@ namespace Evolo
         float OffsetZ(float speed)
         {
             if (speed<0){
-                return 0;
+                return 0f;
             }
             if (speed<minSpeed)
             {
@@ -231,26 +235,42 @@ namespace Evolo
         {
             if (linearSpeedGoalKt<0){
                 linearSpeedGoalKt = Mathf.Clamp(added_speed, minNegSpeed, 0f);
-            } else if (linearSpeedGoalKt==0){
-                if (difference_speed>0){
+                // Debug.Log("Currently backing.");
+            } else if (linearSpeedGoalKt == 0f){
+                if (difference_speed>0)
+                {
                     linearSpeedGoalKt = minSpeed;
-                    } else {
+                    // Debug.Log("Accelerating up to speed!");
+                } 
+                else 
+                {
                     linearSpeedGoalKt += difference_speed;
+                    // Debug.Log("Adding more speeeeed");
                 }
-            } else { //linearSpeedGoalKt >= 8
-                if (difference_speed<0 && linearSpeedGoalKt==minSpeed){
-                    linearSpeedGoalKt = 0;
-                    } else {
+            } 
+            else 
+            { //linearSpeedGoalKt >= 8
+                if (difference_speed<0 && linearSpeedGoalKt==minSpeed)
+                {
+                    linearSpeedGoalKt = 0f;
+                    // Debug.Log("Breaking to a stop.");
+                } 
+                else 
+                {
                     linearSpeedGoalKt = Mathf.Clamp(added_speed, minSpeed, maxSpeed);
+                    // Debug.Log("Setting requested speed.");
                 }
                 
             }
             rollAngleGoal = Mathf.Clamp(added_roll, -maxRoll, maxRoll);
-            if (currentLinearSpeed<minSpeed-1){
-                rollAngleGoalprivate=0;
-                }else {
-                    rollAngleGoalprivate = rollAngleGoal;
-                }
+            if (currentLinearSpeed<minSpeed - 1f)
+            {
+                rollAngleGoalprivate= 0f;
+            }
+            else
+            {
+                rollAngleGoalprivate = rollAngleGoal;
+            }
         }
         void Unity_control_speed_yaw()
         { 
